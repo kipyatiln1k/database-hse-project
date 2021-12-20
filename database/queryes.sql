@@ -1,5 +1,8 @@
-FUNCTIONS_AND_PROCEDURES = {
-    'create_database': """CREATE OR REPLACE PROCEDURE create_tables() AS $$
+
+--functions & PROCEDURES
+
+
+CREATE OR REPLACE PROCEDURE create_tables() AS $$
 BEGIN
     CREATE TABLE city (
         city_id SERIAL NOT NULL PRIMARY KEY,
@@ -98,7 +101,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION all_cities()
+CREATE OR REPLACE PROCEDURE drop_database() AS $$
+BEGIN
+DROP DATABASE IF EXISTS storage_db; 
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION all_cityes()
 RETURNS VARCHAR AS $$
 BEGIN
 	RETURN json_agg(tab.*) from city tab;
@@ -143,5 +153,6 @@ BEGIN
         SELECT s.shelf_id, s._number, s.storage_id, i.item_name, s.area
         FROM shelf s JOIN item i ON s.item_id = i.item_id) tab;
 END;
-$$ LANGUAGE plpgsql;"""
-}
+$$ LANGUAGE plpgsql;
+
+

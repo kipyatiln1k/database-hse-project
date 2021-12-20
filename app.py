@@ -1,5 +1,5 @@
 from flask import Flask
-from database.core import engine
+from database.core import engine, _create_database, _drop_database
 
 from routes.home import app as home
 
@@ -11,4 +11,6 @@ app.register_blueprint(home)
 
 
 if __name__ == "__main__":
+    _drop_database()
+    _create_database()
     app.run()
