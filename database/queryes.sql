@@ -101,11 +101,11 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE PROCEDURE drop_database() AS $$
-BEGIN
-DROP DATABASE IF EXISTS storage_db; 
-END;
-$$ LANGUAGE plpgsql;
+-- CREATE OR REPLACE PROCEDURE drop_database() AS $$
+-- BEGIN
+-- DROP DATABASE IF EXISTS storage_db; 
+-- END;
+-- $$ LANGUAGE plpgsql;
 
 
 CREATE OR REPLACE FUNCTION all_values(table_name VARCHAR)
@@ -377,20 +377,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- test
-
-
-CALL insert_owner('asd','1231231');
-
-CALL insert_city('Москва');
-CALL insert_city('Питер');
-
-SELECT all_values('city');
-SELECT all_values('owner');
-
-CALL clear_table('city');
-
-SELECT all_values('city');
-SELECT all_values('owner');
 
 

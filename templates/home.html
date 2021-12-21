@@ -5,7 +5,26 @@
 
 {% block content %}
   <div class="row">
-    <p class="col-4 mx-auto">Добро пожаловать домой!</p>
+    <h2 class="col-4 mx-auto my-3">Welcome to STORAGE!</h2>
   </div>
+  {% if database_exists %}
+    <div class="row">
+      {% with 
+        drop_database_url = url_for('home.drop_database'),
+        clear_database_url = url_for('home.clear_database')
+      %}
+      <a name="" id="" class="btn btn-danger col-3 mx-auto" href="{{ drop_database_url }}" role="button">Удалить базу</a>
+      <a name="" id="" class="btn btn-danger col-3 mx-auto" href="{{ clear_database_url }}" role="button">Очистить базу</a>
+      {% endwith %}
+    </div>
+  {% else %}
+    <div class="row">
+      {% with 
+          create_database_url = url_for('home.create_database')
+      %}
+      <a name="" id="" class="btn btn-success col-3 mx-auto" href="{{ create_database_url }}" role="button">Создать базу</a>
+      {% endwith %}
+    </div>
+  {% endif %}
 {% endblock content %}
   

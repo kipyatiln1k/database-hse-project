@@ -11,6 +11,4 @@ app.register_blueprint(home)
 
 
 if __name__ == "__main__":
-    _drop_database()
-    _create_database()
     app.run()

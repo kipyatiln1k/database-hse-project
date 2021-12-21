@@ -30,7 +30,7 @@ BEGIN
     CREATE TABLE shelf (
         shelf_id SERIAL NOT NULL PRIMARY KEY,
         storage_id INT NOT NULL,
-        item_id INT,
+        item_id INT UNIQUE,
         _number VARCHAR(25) NOT NULL UNIQUE,
         area INT NOT NULL CHECK(area > 0),
         FOREIGN KEY (storage_id) REFERENCES _storage (storage_id) ON DELETE CASCADE,
@@ -95,53 +95,274 @@ BEGIN
         FOR EACH ROW
         EXECUTE PROCEDURE check_item_area();
 END;
-$$ LANGUAGE plpgsql;
-
-
-CREATE OR REPLACE FUNCTION all_cities()
+$$ LANGUAGE plpgsql;""",
+'create_functions': """CREATE OR REPLACE FUNCTION all_values(table_name VARCHAR)
 RETURNS VARCHAR AS $$
 BEGIN
-	RETURN json_agg(tab.*) from city tab;
-END;
-$$ LANGUAGE plpgsql;
-
-
-CREATE OR REPLACE FUNCTION all_owners()
-RETURNS VARCHAR AS $$
-BEGIN
-	RETURN json_agg(tab.*) from _owner tab;
-END;
-$$ LANGUAGE plpgsql;
-
-
-CREATE OR REPLACE FUNCTION all_items()
-RETURNS VARCHAR AS $$
-BEGIN
-	RETURN json_agg(tab.*) from RETURN json_agg(tab.*) from (
+    IF (table_name = 'city') THEN
+        RETURN json_agg(tab.*) FROM city tab;
+    ELSEIF (table_name = 'storage') THEN
+        RETURN json_agg(tab.*) FROM (
+            SELECT s.storage_id, c.city_name, s.total_shelfs_area
+            FROM _storage s JOIN city c ON s.city_id = c.city_id
+            ) tab;
+    ELSEIF (table_name = 'owner') THEN
+        RETURN json_agg(tab.*) FROM _owner tab;
+    ELSEIF (table_name = 'item') THEN
+        RETURN json_agg(tab.*) from (
         SELECT i.item_id, i.item_name, i.area, o.owner_name
-        FROM item i JOIN _owners o ON i.owner_id = o.owner_id
+        FROM item i JOIN _owner o ON i.owner_id = o.owner_id
         ) tab;
+    ELSEIF (table_name = 'shelf') THEN
+        RETURN json_agg(tab.*) FROM (
+            SELECT s.shelf_id, s._number, s.storage_id, i.item_name, s.area
+            FROM shelf s JOIN item i ON s.item_id = i.item_id
+            ) tab;
+    ELSE
+        RAISE EXCEPTION 'There is no table %', table_name;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION all_storages()
+CREATE OR REPLACE FUNCTION count_values(table_name VARCHAR)
 RETURNS VARCHAR AS $$
 BEGIN
-	RETURN json_agg(tab.*) from (
-        SELECT s.storage_id, c.city_name, s.total_shelfs_area
-        FROM _storage s JOIN city c ON s.city_id = c.city_id
-        ) tab;
+    IF (table_name = 'city') THEN
+        RETURN COUNT(1) FROM city;
+    ELSEIF (table_name = 'storage') THEN
+        RETURN COUNT(1) FROM _storage;
+    ELSEIF (table_name = 'owner') THEN
+        RETURN COUNT(1) FROM _owner;
+    ELSEIF (table_name = 'item') THEN
+        RETURN COUNT(1) FROM item;
+    ELSEIF (table_name = 'shelf') THEN
+        RETURN COUNT(1) FROM shelf;
+    ELSE
+        RAISE EXCEPTION 'There is no table %', table_name;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION all_shelfs()
+CREATE OR REPLACE PROCEDURE insert_city(c_name VARCHAR) AS $$
+BEGIN
+	INSERT INTO city(city_name) VALUES (c_name);
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE insert_owner(o_name VARCHAR, o_phone VARCHAR) AS $$
+BEGIN
+	INSERT INTO _owner(owner_name, phone_number) VALUES (o_name, o_phone);
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE insert_item(i_name VARCHAR, i_owner_id INTEGER, i_area INTEGER) AS $$
+BEGIN
+	INSERT INTO item(item_name, owner_id, area) VALUES (i_name, i_owner_id, i_area);
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE insert_storage(s_city_id INTEGER) AS $$
+BEGIN
+	INSERT INTO storage(city_id) VALUES (s_city_id);
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE insert_shelf(s_num VARCHAR, s_storage_id INTEGER, s_item_id INTEGER, s_area INTEGER) AS $$
+BEGIN
+	INSERT INTO shelf(_number, storage_id, item_id, area) VALUES (s_num, s_storage_id, s_item_id, s_area);
+END;
+$$ LANGUAGE plpgsql;
+
+
+--UPDATE
+
+
+CREATE OR REPLACE PROCEDURE update_city(id INTEGER, c_name VARCHAR) AS $$
+BEGIN
+	UPDATE city 
+    SET city_name = c_name
+    WHERE id = cite_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE update_owner(id INTEGER, o_name VARCHAR, o_phone VARCHAR) AS $$
+BEGIN
+	UPDATE _owner
+    SET owner_name = o_name, phone_number = o_phone
+    WHERE id = owner_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE update_item(id INTEGER, i_name VARCHAR, i_owner_id INTEGER, i_area INTEGER) AS $$
+BEGIN
+	UPDATE item
+    SET item_name = i_name, owner_id = i_owner_id, area = i_area
+    WHERE id = item_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE update_storage(id INTEGER, s_city_id INTEGER) AS $$
+BEGIN
+	UPDATE _storage
+    SET city_id = s_city_id
+    WHERE id = storage_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE update_shelf(id INTEGER, s_num VARCHAR, s_storage_id INTEGER, s_item_id INTEGER, s_area INTEGER) AS $$
+BEGIN
+	UPDATE shelf
+    SET _number = s_num, storage_id = s_storage_id, item_id = s_item, area = s_area
+    WHERE id = shelf_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION search_value(table_name VARCHAR, _strict BOOLEAN, request VARCHAR)
 RETURNS VARCHAR AS $$
 BEGIN
-	RETURN json_agg(tab.*) FROM (
-        SELECT s.shelf_id, s._number, s.storage_id, i.item_name, s.area
-        FROM shelf s JOIN item i ON s.item_id = i.item_id) tab;
+    IF (table_name = 'city') THEN
+        IF (_strict) THEN
+            RETURN json_agg(tab.*) from (
+                SELECT * 
+                FROM city
+                WHERE city.city_name = request
+                ) tab;
+        END IF;
+        RETURN json_agg(tab.*) from (
+            SELECT * 
+            FROM city
+            WHERE lower(city.city_name) LIKE CONCAT('%', lower(request), '%')
+            ) tab;
+    ELSEIF (table_name = 'owner') THEN
+        IF (_strict) THEN
+            RETURN json_agg(tab.*) FROM (
+                SELECT * 
+                FROM _owner
+                WHERE _owner.owner_name = request
+                ) tab;
+        END IF;
+        RETURN json_agg(tab.*) FROM (
+            SELECT * 
+            FROM _owner
+            WHERE lower(_owner.owner_name) LIKE CONCAT('%', lower(request), '%')
+            ) tab;
+    ELSEIF (table_name = 'item') THEN
+        IF (_strict) THEN
+            RETURN json_agg(tab.*) FROM (
+                SELECT * 
+                FROM item
+                WHERE item.item_name = request
+                ) tab;
+        END IF;
+        RETURN json_agg(tab.*) FROM (
+            SELECT * 
+            FROM item
+            WHERE lower(item.item_name) LIKE CONCAT('%', lower(request), '%')
+            ) tab;
+    ELSEIF (table_name = 'shelf') THEN
+        IF (_strict) THEN
+            RETURN json_agg(tab.*) FROM (
+            SELECT * 
+            FROM shelf
+            WHERE shelf._number = request
+            ) tab;
+        END IF;
+        RETURN json_agg(tab.*) FROM (
+        SELECT * 
+        FROM shelf
+        WHERE lower(shelf._number) LIKE CONCAT('%', lower(request), '%')
+        ) tab;
+    ELSE
+        RAISE EXCEPTION 'There is no table % or search is not available in the table', table_name;
+    END IF;
 END;
-$$ LANGUAGE plpgsql;"""
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE clear_table(TABLE_NAME VARCHAR) AS $$
+BEGIN
+	IF (table_name = 'city') THEN
+        DELETE FROM city;
+    ELSEIF (table_name = 'storage') THEN
+        DELETE FROM _storage;
+    ELSEIF (table_name = 'owner') THEN
+        DELETE FROM _owner;
+    ELSEIF (table_name = 'item') THEN
+        DELETE FROM item;
+    ELSEIF (table_name = 'shelf') THEN
+        DELETE FROM shelf;
+    ELSE
+        RAISE EXCEPTION 'There is no table %', table_name;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE clear_tables() AS $$
+BEGIN
+    DELETE FROM city;
+    DELETE FROM _storage;
+    DELETE FROM _owner;
+    DELETE FROM item;
+    DELETE FROM shelf;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE delete_by_id(TABLE_NAME VARCHAR, id INT) AS $$
+BEGIN
+	IF (table_name = 'city') THEN
+        DELETE FROM city
+        WHERE city_id = id;
+    ELSEIF (table_name = 'storage') THEN
+        DELETE FROM _storage
+        WHERE storage_id = id;
+    ELSEIF (table_name = 'owner') THEN
+        DELETE FROM _owner
+        WHERE owner_id = id;
+    ELSEIF (table_name = 'item') THEN
+        DELETE FROM item
+        WHERE item_id = id;
+    ELSEIF (table_name = 'shelf') THEN
+        DELETE FROM shelf
+        WHERE shelf_id = id;
+    ELSE
+        RAISE EXCEPTION 'There is no table %', table_name;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE PROCEDURE delete_by_index(TABLE_NAME VARCHAR, request VARCHAR) AS $$
+BEGIN
+	IF (table_name = 'city') THEN
+        DELETE FROM city
+        WHERE city_name = request;
+    ELSEIF (table_name = 'owner') THEN
+        DELETE FROM _owner
+        WHERE owner_name = request;
+    ELSEIF (table_name = 'item') THEN
+        DELETE FROM item
+        WHERE item_name = request;
+    ELSEIF (table_name = 'shelf') THEN
+        DELETE FROM shelf
+        WHERE _number = request;
+    ELSE
+        RAISE EXCEPTION 'There is no table % or delete_by_index is not available in the table', table_name;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;""",
+    'create_tables': 'CALL create_tables();',
+    'clear_database': 'CALL clear_database();',
 }
