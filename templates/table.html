@@ -22,9 +22,7 @@
         </table>
     </div>
 </div>
-<script>
-    const get_values_url = "{{ url_for('tables.get_values', table_name=table['name']) }}";
-</script>
+
 <script src="{{ url_for('static', filename=table['const_filename']) }}"></script>
 <script src="{{ url_for('static', filename='js/table.js') }}"></script>
 

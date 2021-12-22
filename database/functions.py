@@ -168,7 +168,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE PROCEDURE insert_storage(s_city_id INTEGER) AS $$
 BEGIN
-	INSERT INTO _storage(city_id) VALUES (s_city_id);
+	INSERT INTO _storage(city_id, total_shelfs_area) VALUES (s_city_id, 0);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -187,7 +187,7 @@ CREATE OR REPLACE PROCEDURE update_city(id INTEGER, c_name VARCHAR) AS $$
 BEGIN
 	UPDATE city 
     SET city_name = c_name
-    WHERE id = cite_id;
+    WHERE id = city_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -370,15 +370,26 @@ $$ LANGUAGE plpgsql;""",
     'test_input': ["""CALL insert_city('Москва');
 CALL insert_city('Питер');
 CALL insert_city('Екат');""",
-"""CALL insert_storage(1);
+                   """CALL insert_storage(1);
 CALL insert_storage(1);
 CALL insert_storage(2);
 CALL insert_storage(3);""",
-"""CALL insert_owner('ООО Екатэлектрострой', '88005553535');
+                   """CALL insert_owner('ООО Екатэлектрострой', '88005553535');
 CALL insert_owner('НИУ ВШЭ', '88005553535');""",
-"""CALL insert_item('Прах Бычкова', 2, 2);""",
-"""CALL insert_shelf('A1', 1, 1, 10);
+                   """CALL insert_item('Прах Бычкова', 2, 2);""",
+                   """CALL insert_shelf('A1', 1, 1, 10);
 CALL insert_shelf('A2', 1, NULL, 10);
 CALL insert_shelf('A3', 2, NULL, 10);"""],
     'count_values': "SELECT count_values('{table_name}');",
+    'insert_city': "CALL insert_city('{city_name}');",
+    'insert_owner': "CALL insert_owner('{owner_name}, {phone_number}');",
+    'insert_storage': "CALL insert_storage('{table_name}', '{city_name}');",
+    'insert_item': "CALL insert_item('{table_name}', '{city_name}');",
+    'insert_shelf': "CALL insert_shelf('{table_name}', '{city_name}');",
+    'update_city': "CALL update_city({city_id},'{city_name}');",
+    'update_owner': "CALL update_owner({owner_id},'{owner_name}, {phone_number}');",
+    'update_storage': "CALL update_storage({city_id},'{table_name}', '{city_name}');",
+    'update_item': "CALL update_item({city_id},'{table_name}', '{city_name}');",
+    'update_shelf': "CALL update_shelf({city_id},'{table_name}', '{city_name}');",
+    'delete_by_id': "CALL delete_by_id('{table}', {id})",
 }
