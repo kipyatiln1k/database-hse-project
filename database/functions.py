@@ -96,7 +96,7 @@ BEGIN
         EXECUTE PROCEDURE check_item_area();
 END;
 $$ LANGUAGE plpgsql;""",
-'create_functions': """CREATE OR REPLACE FUNCTION all_values(table_name VARCHAR)
+    'create_functions': """CREATE OR REPLACE FUNCTION all_values(table_name VARCHAR)
 RETURNS VARCHAR AS $$
 BEGIN
     IF (table_name = 'city') THEN
@@ -105,19 +105,19 @@ BEGIN
         RETURN json_agg(tab.*) FROM (
             SELECT s.storage_id, c.city_name, s.total_shelfs_area
             FROM _storage s JOIN city c ON s.city_id = c.city_id
-            ) tab;
+        ) tab;
     ELSEIF (table_name = 'owner') THEN
         RETURN json_agg(tab.*) FROM _owner tab;
     ELSEIF (table_name = 'item') THEN
-        RETURN json_agg(tab.*) from (
-        SELECT i.item_id, i.item_name, i.area, o.owner_name
-        FROM item i JOIN _owner o ON i.owner_id = o.owner_id
+        RETURN json_agg(tab.*) FROM (
+            SELECT i.item_id, i.item_name, i.area, o.owner_name
+            FROM item i JOIN _owner o ON i.owner_id = o.owner_id
         ) tab;
     ELSEIF (table_name = 'shelf') THEN
         RETURN json_agg(tab.*) FROM (
             SELECT s.shelf_id, s._number, s.storage_id, i.item_name, s.area
-            FROM shelf s JOIN item i ON s.item_id = i.item_id
-            ) tab;
+            FROM shelf s LEFT JOIN item i ON s.item_id = i.item_id
+        ) tab;
     ELSE
         RAISE EXCEPTION 'There is no table %', table_name;
     END IF;
@@ -168,7 +168,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE PROCEDURE insert_storage(s_city_id INTEGER) AS $$
 BEGIN
-	INSERT INTO storage(city_id) VALUES (s_city_id);
+	INSERT INTO _storage(city_id) VALUES (s_city_id);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -364,5 +364,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;""",
     'create_tables': 'CALL create_tables();',
-    'clear_database': 'CALL clear_database();',
+    'all_values': "SELECT all_values('{table_name}');",
+    'clear_table': "CALL clear_table('{table_name}');",
+    'clear_tables': "CALL clear_tables();",
+    'test_input': ["""CALL insert_city('Москва');
+CALL insert_city('Питер');
+CALL insert_city('Екат');""",
+"""CALL insert_storage(1);
+CALL insert_storage(1);
+CALL insert_storage(2);
+CALL insert_storage(3);""",
+"""CALL insert_owner('ООО Екатэлектрострой', '88005553535');
+CALL insert_owner('НИУ ВШЭ', '88005553535');""",
+"""CALL insert_item('Прах Бычкова', 2, 2);""",
+"""CALL insert_shelf('A1', 1, 1, 10);
+CALL insert_shelf('A2', 1, NULL, 10);
+CALL insert_shelf('A3', 2, NULL, 10);"""],
+    'count_values': "SELECT count_values('{table_name}');",
 }

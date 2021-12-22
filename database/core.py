@@ -7,6 +7,12 @@ engine = sqlalchemy.create_engine(
     f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}')
 
 
+def count(table_name):
+    result = send_query(FUNCTIONS_AND_PROCEDURES['count_values'].format(
+        table_name=table_name)).fetchone()[0],
+    return result[0]
+
+
 def _create_database():
     if not database_exists(engine.url):
         create_database(engine.url)

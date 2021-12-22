@@ -121,14 +121,14 @@ BEGIN
     ELSEIF (table_name = 'owner') THEN
         RETURN json_agg(tab.*) FROM _owner tab;
     ELSEIF (table_name = 'item') THEN
-        RETURN json_agg(tab.*) from (
+        RETURN json_agg(tab.*) FROM (
         SELECT i.item_id, i.item_name, i.area, o.owner_name
         FROM item i JOIN _owner o ON i.owner_id = o.owner_id
         ) tab;
     ELSEIF (table_name = 'shelf') THEN
         RETURN json_agg(tab.*) FROM (
             SELECT s.shelf_id, s._number, s.storage_id, i.item_name, s.area
-            FROM shelf s JOIN item i ON s.item_id = i.item_id
+            FROM shelf s RIGHT JOIN item i ON s.item_id = i.item_id
             ) tab;
     ELSE
         RAISE EXCEPTION 'There is no table %', table_name;
@@ -180,7 +180,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE PROCEDURE insert_storage(s_city_id INTEGER) AS $$
 BEGIN
-	INSERT INTO storage(city_id) VALUES (s_city_id);
+	INSERT INTO _storage(city_id) VALUES (s_city_id);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -375,7 +375,4 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
-
-
-
 

@@ -13,4 +13,5 @@ app.register_blueprint(tables)
 
 
 if __name__ == "__main__":
+    _drop_database()
     app.run()
