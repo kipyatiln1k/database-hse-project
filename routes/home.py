@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for
 from database.core import _create_database, _drop_database, engine, send_query
 from sqlalchemy_utils import database_exists
 from database.functions import FUNCTIONS_AND_PROCEDURES
+from routes.tables import tables
 
 app = Blueprint("home", __name__)
 
@@ -25,4 +26,4 @@ def clear_database():
 
 @app.route("/")
 def home():
-    return render_template("home.html", database_exists=database_exists(engine.url))
+    return render_template("home.html", database_exists=database_exists(engine.url), tables=tables)
