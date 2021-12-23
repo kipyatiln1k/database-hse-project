@@ -24,13 +24,6 @@ function message(message) {
     messages.appendChild(message_card);
 }
 
-{
-    /* <div class="alert alert-danger alert-dismissible fade show col-12 col-md-8 mx-auto" role="alert">
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          <strong id="message"></strong> 
-        </div> */
-}
-
 const select_dct = {
     owner_name: "owner_id",
     city_name: "city_id",
