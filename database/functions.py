@@ -33,7 +33,7 @@ BEGIN
         item_id INT UNIQUE,
         _number VARCHAR(25) NOT NULL UNIQUE,
         area INT NOT NULL CHECK(area > 0),
-        FOREIGN KEY (storage_id) REFERENCES _storage (storage_id) ON DELETE CASCADE,
+        FOREIGN KEY (storage_id) REFERENCES _storage (storage_id) ON DELETE RESTRICT,
         FOREIGN KEY (item_id) REFERENCES item (item_id) ON DELETE SET NULL
     );
 
@@ -228,7 +228,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION search_value(table_name VARCHAR, _strict BOOLEAN, request VARCHAR)
+CREATE OR REPLACE FUNCTION search_values(table_name VARCHAR, _strict BOOLEAN, request VARCHAR)
 RETURNS VARCHAR AS $$
 BEGIN
     IF (table_name = 'city') THEN
@@ -273,15 +273,15 @@ BEGIN
     ELSEIF (table_name = 'shelf') THEN
         IF (_strict) THEN
             RETURN json_agg(tab.*) FROM (
-            SELECT * 
-            FROM shelf
-            WHERE shelf._number = request
+                SELECT s.shelf_id, s._number, s.storage_id, i.item_name, s.area
+                FROM shelf s LEFT JOIN item i ON s.item_id = i.item_id
+                WHERE s._number = request
             ) tab;
         END IF;
         RETURN json_agg(tab.*) FROM (
-        SELECT * 
-        FROM shelf
-        WHERE lower(shelf._number) LIKE CONCAT('%', lower(request), '%')
+            SELECT s.shelf_id, s._number, s.storage_id, i.item_name, s.area
+            FROM shelf s LEFT JOIN item i ON s.item_id = i.item_id
+            WHERE lower(s._number) LIKE CONCAT('%', lower(request), '%')
         ) tab;
     ELSE
         RAISE EXCEPTION 'There is no table % or search is not available in the table', table_name;
@@ -382,14 +382,16 @@ CALL insert_shelf('A2', 1, NULL, 10);
 CALL insert_shelf('A3', 2, NULL, 10);"""],
     'count_values': "SELECT count_values('{table_name}');",
     'insert_city': "CALL insert_city('{city_name}');",
-    'insert_owner': "CALL insert_owner('{owner_name}, {phone_number}');",
-    'insert_storage': "CALL insert_storage('{table_name}', '{city_name}');",
-    'insert_item': "CALL insert_item('{table_name}', '{city_name}');",
-    'insert_shelf': "CALL insert_shelf('{table_name}', '{city_name}');",
+    'insert_owner': "CALL insert_owner('{owner_name}', '{phone_number}');",
+    'insert_storage': "CALL insert_storage({city_id});",
+    'insert_item': "CALL insert_item('{item_name}', {owner_id}, {area});",
+    'insert_shelf': "CALL insert_shelf('{_number}', {storage_id}, {item_id}, {area});",
     'update_city': "CALL update_city({city_id},'{city_name}');",
     'update_owner': "CALL update_owner({owner_id},'{owner_name}, {phone_number}');",
-    'update_storage': "CALL update_storage({city_id},'{table_name}', '{city_name}');",
-    'update_item': "CALL update_item({city_id},'{table_name}', '{city_name}');",
-    'update_shelf': "CALL update_shelf({city_id},'{table_name}', '{city_name}');",
+    'update_storage': "CALL update_storage({storage_id},{city_id});",
+    'update_item': "CALL update_item({item_id},''{item_name}', {owner_id}, {area});",
+    'update_shelf': "CALL update_shelf({shelf_id},'{_number}', {storage_id}, {item_id}, {area});",
     'delete_by_id': "CALL delete_by_id('{table}', {id})",
+    'search_values': "SELECT search_values('{table_name}', {strict}, '{request}');",
+    'delete_by_index': "CALL delete_by_index('{table_name}','{index}')"
 }

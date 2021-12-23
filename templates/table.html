@@ -9,11 +9,37 @@
 </div>
 <div class="row my-3">
     {% with home_url = url_for('home.home') %}
-    <a name="" id="" class="btn btn-success col-2 mx-auto" href="{{ home_url }}" role="button">На главную</a>
+    <a name="" id="" class="btn btn-success col-8 col-md-4 mx-auto" href="{{ home_url }}" role="button">На главную</a>
     {% endwith %}
 </div>
 <div class="row">
-    <div class="col mx-auto text-center">
+    {% if table['name'] != 'storage' %}
+    <div class="col-6 col-md-4 mx-auto">
+        <div class="my-2">
+            <input type="search" class="form-control" name="" id="search" placeholder="Поиск:">
+        </div>
+        <div class="form-check my-2">
+            <input type="checkbox" class="form-check-input" name="" id="strictSearch">
+            <label class="form-check-label" for="strictSearch">Точное совпадение</label>
+        </div>
+    </div>
+    <div class="col-6 col-md-2 mx-auto">
+        <div class="row my-2">
+            <a name="" id="" class="btn btn-primary col-12" role="button" onclick="update_table(document.getElementById('search').value);">Искать</a>
+        </div>
+        <div class="row">
+            <a name="" id="" class="btn btn-danger col-12" role="button" onclick="delete_by_index();">Удалить</a>
+        </div>
+    </div>
+    {% endif %}
+    <a class="btn btn-danger card text-center bg-danger col-12 col-md-5 mx-auto my-3" onclick="clear_table();">
+        <div class="card-body">
+        <h4 class="card-title">Очистить таблицу</h4>
+        </div>
+    </a>
+</div>
+<div class="row my-4">
+    <div class="col mx-auto my-4 text-center">
         <table class="table table-striped table-borderless">
             <thead class="thead-default" id="thead">
             </thead>

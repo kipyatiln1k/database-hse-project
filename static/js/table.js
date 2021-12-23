@@ -1,8 +1,45 @@
 "use strict";
 
+function message(message) {
+    let messages = document.getElementById("messages");
+    messages.innerHTML = "";
+
+    let message_card = document.createElement("div");
+    message_card.className =
+        "alert alert-danger alert-dismissible fade show col-12 col-md-8 mx-auto my-3";
+
+    let btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn-close";
+    btn.setAttribute("data-bs-dismiss", "alert");
+
+    btn.ariaLabel = "Close";
+    message_card.appendChild(btn);
+
+    let strong = document.createElement("strong");
+    strong.id = "message";
+    strong.innerHTML = message;
+    message_card.appendChild(strong);
+
+    messages.appendChild(message_card);
+}
+
+{
+    /* <div class="alert alert-danger alert-dismissible fade show col-12 col-md-8 mx-auto" role="alert">
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          <strong id="message"></strong> 
+        </div> */
+}
+
+const select_dct = {
+    owner_name: "owner_id",
+    city_name: "city_id",
+    item_name: "item_id",
+};
+
 async function selector(table, field) {
-    selector = document.createElement("select");
-    selector.className = "form-select";
+    let select = document.createElement("select");
+    select.className = "form-select";
     let response = await fetch(
         Flask.url_for("tables.get_values", { table_name: table })
     );
@@ -10,14 +47,14 @@ async function selector(table, field) {
     if (response.ok) {
         let json = await response.json();
 
-        for (element in json) {
+        for (let element in json) {
             let option = document.createElement("option");
-            option.value = element[`${table}_id`];
-            option.innerText = element[field];
-            selector.appendChild(option);
+            option.value = json[element][`${table}_id`];
+            option.innerText = `${json[element][field]} - ${option.value}`;
+            select.appendChild(option);
         }
 
-        return selector;
+        return select;
     } else {
         return null;
     }
@@ -27,7 +64,24 @@ function text_field(placeholder = "") {
     let text = document.createElement("input");
     text.className = "form-control";
     text.placeholder = placeholder;
-    text.for;
+
+    return text;
+}
+
+function number(placeholder = 0) {
+    let text = document.createElement("input");
+    text.type = "number";
+    text.className = "form-control";
+    text.placeholder = placeholder;
+
+    return text;
+}
+
+function phone_number(placeholder = "80000000000") {
+    let text = document.createElement("input");
+    text.type = "tel";
+    text.className = "form-control";
+    text.placeholder = placeholder;
 
     return text;
 }
@@ -51,21 +105,41 @@ function create_table() {
     update_table();
 }
 
-function add_form(row, prefix = "new", element = null) {
+async function add_form(row, prefix = "new", element = null) {
     for (let field of fields) {
         let td = document.createElement("td");
         if (field in forms) {
-            switch (forms[field]) {
-                case "text":
-                    let txt_field = text_field(
-                        form_params[field]["placeholder"]
-                    );
-                    txt_field.id = `${prefix}-${field}`;
-                    txt_field.classList.add("new-value");
-                    td.appendChild(txt_field);
-                    break;
-                default:
-                    break;
+            if (forms[field] === "text") {
+                let txt_field = text_field(form_params[field]["placeholder"]);
+                txt_field.id = `${prefix}-${field}`;
+                txt_field.classList.add("new-value");
+                td.appendChild(txt_field);
+            } else if (forms[field] === "select") {
+                let select = null;
+                if (field === "owner_name") {
+                    select = await selector("owner", field);
+                    select.id = `${prefix}-${field}`;
+                } else if (field === "storage_id") {
+                    select = await selector("storage", field);
+                    select.id = `${prefix}-${field}`;
+                } else if (field === "item_name") {
+                    select = await selector("item", field);
+                    select.id = `${prefix}-${field}`;
+                } else if (field === "city_name") {
+                    select = await selector("city", field);
+                }
+                select.id = `${prefix}-${field}`;
+                td.appendChild(select);
+            } else if (forms[field] === "number") {
+                let num = number(element ? element["area"] : 0);
+                num.id = `${prefix}-${field}`;
+                td.appendChild(num);
+            } else if (forms[field] === "phone") {
+                let tel = phone_number(
+                    element ? element["phone_number"] : "80000000000"
+                );
+                tel.id = `${prefix}-${field}`;
+                td.appendChild(tel);
             }
         } else {
             if (element) {
@@ -77,17 +151,46 @@ function add_form(row, prefix = "new", element = null) {
     }
 }
 
-async function update_table(request = null) {
+async function update_table(search_request = null) {
     // let response = await fetch(get_values_url, {
-    let response = await fetch(
-        Flask.url_for("tables.get_values", { table_name: table_name })
-    );
+    console.log(search_request);
+    let response = null;
+    if (search_request) {
+        let strict = document.getElementById("strictSearch").value;
+        console.log(strict);
+        response = await fetch(
+            Flask.url_for("tables.search_values", { table_name: table_name }) +
+                `?request=${search_request}&strict=${strict}`
+        );
+    } else {
+        response = await fetch(
+            Flask.url_for("tables.get_values", { table_name: table_name })
+        );
+    }
 
     if (response.ok) {
         let json = await response.json();
 
         let tbody = document.getElementById("tbody");
         tbody.innerText = "";
+
+        let row = document.createElement("tr");
+        let td = document.createElement("td");
+
+        row.appendChild(td);
+
+        await add_form(row);
+
+        td = document.createElement("td");
+
+        let btn = document.createElement("button");
+        btn.classList.add("btn", "btn-success");
+        btn.innerText = "Добавить";
+        btn.onclick = insert;
+        td.appendChild(btn);
+
+        row.appendChild(td);
+        tbody.appendChild(row);
         for (let element of json) {
             let row = document.createElement("tr");
             row.id = `row-${element[fields[0]]}`;
@@ -121,27 +224,10 @@ async function update_table(request = null) {
 
             tbody.appendChild(row);
         }
-        let row = document.createElement("tr");
-        let td = document.createElement("td");
-
-        row.appendChild(td);
-
-        add_form(row);
-
-        td = document.createElement("td");
-
-        let btn = document.createElement("button");
-        btn.classList.add("btn", "btn-success");
-        btn.innerText = "Добавить";
-        btn.onclick = insert;
-        td.appendChild(btn);
-
-        row.appendChild(td);
-        tbody.appendChild(row);
     }
 }
 
-function prepare_update(id, element) {
+async function prepare_update(id, element) {
     let row = document.getElementById(`row-${id}`);
     row.innerHTML = "";
     let td = document.createElement("td");
@@ -155,7 +241,7 @@ function prepare_update(id, element) {
     td.appendChild(btn);
     row.appendChild(td);
 
-    add_form(row, id, element);
+    await add_form(row, id, element);
 
     td = document.createElement("td");
 
@@ -163,7 +249,7 @@ function prepare_update(id, element) {
     btn.classList.add("btn", "btn-success");
     btn.innerText = "Отправить";
     btn.onclick = () => {
-        update(id)
+        update(id);
     };
     td.appendChild(btn);
 
@@ -199,14 +285,24 @@ async function insert() {
         table: table_name,
     };
     for (let field in forms) {
+        if (forms[field] === "select") {
+            data[select_dct[field]] = document.getElementById(
+                `new-${field}`
+            ).value;
+        }
         data[field] = document.getElementById(`new-${field}`).value;
     }
-    console.log(data);
 
     let response = await fetch(Flask.url_for("tables.insert_value"), {
         method: "POST",
         body: JSON.stringify(data),
     });
+
+    let json = await response.json();
+    console.log(json);
+    if ("error" in json) {
+        message(json["error"]);
+    }
 
     update_table();
 }
@@ -219,15 +315,21 @@ async function update(id) {
     data[`${table_name}_id`] = id;
 
     for (let field in forms) {
-        console.log(`${id}-${field}`);
-        data[field] = document.getElementById(`${id}-${field}`).value;
+        if (forms[field] === "select") {
+            data[field] = document.getElementById(`${id}-${field}`).value;
+        }
     }
-    console.log(data);
 
     let response = await fetch(Flask.url_for("tables.update_value"), {
         method: "POST",
         body: JSON.stringify(data),
     });
+
+    let json = await response.json();
+    console.log(json);
+    if ("error" in json) {
+        message(json["error"]);
+    }
 
     update_table();
 }
@@ -238,16 +340,66 @@ async function delete_by_id(id) {
         id: id,
     };
 
-    console.log(data);
-
     let response = await fetch(Flask.url_for("tables.delete_by_id"), {
         method: "POST",
         body: JSON.stringify(data),
     });
 
+    let json = await response.json();
+    console.log(json);
+    if ("error" in json) {
+        message(json["error"]);
+    }
+
     update_table();
 }
 
+async function delete_by_index() {
+    let data = {
+        table_name: table_name,
+        index: document.getElementById("search").value,
+    };
 
+    console.log(
+        Flask.url_for("tables.delete_by_index", { table_name: table_name })
+    );
+    let response = await fetch(
+        Flask.url_for("tables.delete_by_index", { table_name: table_name }),
+        {
+            method: "POST",
+            body: JSON.stringify(data),
+        }
+    );
+
+    let json = await response.json();
+    console.log(json);
+    if ("error" in json) {
+        message(json["error"]);
+    }
+
+    update_table();
+}
+
+async function clear_table() {
+    console.log("1");
+    let response = await fetch(
+        Flask.url_for("tables.table_clear", {
+            table_name: table_name,
+        })
+    );
+
+    let json = await response.json();
+    console.log(json);
+    if ("error" in json) {
+        message(json["error"]);
+    }
+
+    update_table();
+}
 
 create_table();
+
+let alertList = document.querySelectorAll(".alert");
+alertList.forEach(function (alert) {
+    new bootstrap.Alert(alert);
+});
