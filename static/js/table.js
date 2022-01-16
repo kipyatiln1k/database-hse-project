@@ -40,13 +40,19 @@ async function selector(table, field) {
     if (response.ok) {
         let json = await response.json();
 
+        if (field === "item_name") {
+            let option = document.createElement("option");
+            option.value = null;
+            option.innerText = "Пусто";
+            select.appendChild(option);
+        }
+
         for (let element in json) {
             let option = document.createElement("option");
             option.value = json[element][`${table}_id`];
             option.innerText = `${json[element][field]} - ${option.value}`;
             select.appendChild(option);
         }
-
         return select;
     } else {
         return null;
@@ -270,6 +276,15 @@ function cancel_update(id, element) {
         row.appendChild(td);
     }
     td = document.createElement("td");
+
+    btn = document.createElement("button");
+    btn.classList.add("btn", "btn-danger");
+    btn.innerText = "Удалить";
+    btn.onclick = () => {
+        delete_by_id(element[fields[0]]);
+    };
+    td.appendChild(btn);
+
     row.appendChild(td);
 }
 

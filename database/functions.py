@@ -376,7 +376,8 @@ CALL insert_storage(2);
 CALL insert_storage(3);""",
                    """CALL insert_owner('ООО Екатэлектрострой', '88005553535');
 CALL insert_owner('НИУ ВШЭ', '88005553535');""",
-                   """CALL insert_item('Прах Бычкова', 2, 2);""",
+                   """CALL insert_item('Футболки HSE', 2, 2);""",
+                   """CALL insert_item('Ноут Бычкова', 2, 4);""",
                    """CALL insert_shelf('A1', 1, 1, 10);
 CALL insert_shelf('A2', 1, NULL, 10);
 CALL insert_shelf('A3', 2, NULL, 10);"""],
